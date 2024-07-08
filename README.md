@@ -27,7 +27,7 @@ yarn start
 This will start the local server using Parcel on `http://localhost:8080`. Open your browser and navigate to this URL to play the game.
 
 Alternatively, if you prefer playing online, visit the hosted version on GitHub Pages:
-
+[Github Page](https://hibiikiii.github.io/tbs-game/)
 
 ## Technologies Used
 
