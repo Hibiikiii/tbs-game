@@ -19,8 +19,8 @@
 
 To run the game locally using Parcel, clone the repository and follow these steps:
 ```
-git clone [URL-of-your-Github-repository]
-cd [Repository-Name]
+git clone git@github.com:Hibiikiii/tbs-game.git
+cd tbs-game
 yarn install
 yarn start
 ```
