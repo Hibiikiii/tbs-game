@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>TBS - Stack High, Score Higher</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+      <div id="loadingScreen">
+        <div style="display: flex; flex-direction: column; gap: 50px; height: 100vh; justify-content: center; align-items: center;">
+          <div class="loadingImage"></div>
+          <h2>Preparing the books</h2>
+        </div>
+      </div>
+      <div id="nameScreen" style="pointer-events: all;">
+        <h1>Enter Your Name</h1>
+        <input type="text" id="playerNameInput" maxlength="12">
+        <button id="startButton">Start Game</button>
+        <p id="errorMessage"></p>
+      </div>
+      <div id="titleScreen">
+        <div class="highscore">
+          <p>High Score</p>
+          <p id="highscoreValue"><b>0</b></p>
+        </div>
+        <div class="title"><p>Tabellenbuchstappler</p><p><b>Press to start</b></p></div>
+        <div class="leaderboard"></div>
+      </div>
+      <div id="gameScreen" style="opacity: 0;">
+        <div id="score">0</div>
+      </div>
+      <div id="gameOver" style="opacity: 0;">
+        <div id="scoreResult">0</div>
+        <div>Game over!</div>
+        <div style="color: white; font-size: 50px;">try again</div>
+      </div>
+      <div id="leaderboard" style="opacity: 0;">
+        <h1>Leaderboard</h1>
+        <p>Press anywhere to close</p>
+        <ul id="leaderboard-list"></ul>
+      </div>
+      <div id="copyright">created by Leon Etzel</div>
+        <script type="module" src="/src/index.js"></script>
+      </body>
+</html>
