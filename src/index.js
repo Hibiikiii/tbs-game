@@ -381,6 +381,7 @@ function handleRestart() {
     gameOverElement.style.opacity = 0;
     titleScreenElement.style.opacity = 1;
     gameScreen.style.opacity = 0;
+    showHighscore();
   }
   autopilot = true;
   gameEnded = false;
@@ -472,6 +473,7 @@ function missedTheSpot() {
     gameScreen.style.opacity = 0;
     const playerName = localStorage.getItem('playerName');
     addScore(playerName, stack.length - 2).then(() => {
+      showHighscore();
       updateLeaderboard();
     }).catch((error) => {
       console.error('Failed to save score:', error);

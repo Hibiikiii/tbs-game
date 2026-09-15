@@ -116,26 +116,25 @@ function getLeaderboard(callback) {
   });
 }
 
-function showHighscore(callback) {
+async function showHighscore(callback) {
   const user = auth.currentUser;
   if (!user) {
     console.error('User is not authenticated');
-    callback();
+    if (callback) callback();
     return;
   }
 
-  const userRef = ref(database, 'leaderboard/' + user.uid);
+  try {
+    const snapshot = await get(ref(database, 'leaderboard/' + user.uid));
+    const data = snapshot.val();
+    const highscore = data?.score ?? 0;
+    const el = document.getElementById('highscoreValue');
+    if (el) el.textContent = String(highscore);
+  } catch (error) {
+    console.error('Error loading highscore:', error);
+  }
 
-  onValue(
-    userRef,
-    (snapshot) => {
-      const data = snapshot.val();
-      const highscore = data?.score ?? 0;
-      document.getElementById('highscoreValue').textContent = highscore;
-      callback();
-    },
-    { onlyOnce: true }
-  );
+  if (callback) callback();
 }
 
 async function getPersonalScore(username, callback) {
