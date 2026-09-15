@@ -1,12 +1,17 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, push, update, query, orderByChild, equalTo, limitToLast } from 'firebase/database';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
-import dotenv from 'dotenv';
+import {
+  getDatabase,
+  ref,
+  get,
+  onValue,
+  update,
+  query,
+  orderByChild,
+  limitToLast,
+} from 'firebase/database';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
-// Configure dotenv to load the .env file
-dotenv.config();
-
-// Firebase configuration using environment variables
+// Parcel inlines process.env.* from .env / CI secrets at build time
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -14,133 +19,158 @@ const firebaseConfig = {
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.FIREBASE_APP_ID,
-  databaseURL: process.env.FIREBASE_DATABASE_URL
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
+let authReady = null;
+
 export function initializeAuth(onSuccess, onFailure) {
-  signInAnonymously(auth)
-    .then(() => {
-      console.log('Signed in anonymously');
-      onSuccess();
-    })
-    .catch((error) => {
-      console.error('Error signing in anonymously:', error);
-      if (onFailure) {
-        onFailure(error);
+  if (!authReady) {
+    authReady = signInAnonymously(auth)
+      .then(() => {
+        console.log('Signed in anonymously');
+      })
+      .catch((error) => {
+        authReady = null;
+        console.error('Error signing in anonymously:', error);
+        throw error;
+      });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('User signed in:', user.uid);
+      } else {
+        console.log('User signed out');
       }
     });
+  }
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log('User signed in:', user.uid);
-    } else {
-      console.log('User signed out');
-    }
-  });
+  authReady
+    .then(() => onSuccess())
+    .catch((error) => {
+      if (onFailure) onFailure(error);
+    });
 }
 
+async function waitForAuth() {
+  if (auth.currentUser) return auth.currentUser;
+  if (authReady) {
+    await authReady;
+    return auth.currentUser;
+  }
+  return null;
+}
 
-function addScore(username, score) {
-  const user = auth.currentUser;
-  if (user && username.length !== 0) {
-    const uid = user.uid;
-    const userRef = ref(database, 'leaderboard/' + uid);
+async function addScore(username, score) {
+  if (!username || username.length === 0) return;
 
-    // Get the current data for the user
-    get(userRef).then((snapshot) => {
-      const existingData = snapshot.val();
-      console.log('Existing data:', existingData); // Check what existing data is
+  const user = await waitForAuth();
+  if (!user) {
+    console.error('Cannot add score: user is not authenticated');
+    return;
+  }
 
-      if (!existingData || score > existingData.score) {
-        const scoreData = {
-          username: username,
-          score: score,
-          uid: uid // Store the UID with the score data for easier lookup
-        };
+  const uid = user.uid;
+  const userRef = ref(database, 'leaderboard/' + uid);
 
-        console.log('Adding/updating score:', scoreData);
-        // Update the database with the new score
-        update(userRef, scoreData)
-          .then(() => {
-            console.log('Score added/updated successfully');
-          })
-          .catch((error) => {
-            console.error('Error adding/updating score:', error);
-          });
-      }
-    }).catch((error) => {
-      console.error('Error fetching user data:', error);
-    });
+  try {
+    const snapshot = await get(userRef);
+    const existingData = snapshot.val();
+
+    if (!existingData || score > existingData.score) {
+      await update(userRef, {
+        username,
+        score,
+        uid,
+      });
+      console.log('Score added/updated successfully');
+    }
+  } catch (error) {
+    console.error('Error adding/updating score:', error);
   }
 }
 
-
 function getLeaderboard(callback) {
-  const leaderboardQuery = query(ref(database, 'leaderboard'), orderByChild('score'), limitToLast(10));
+  const leaderboardQuery = query(
+    ref(database, 'leaderboard'),
+    orderByChild('score'),
+    limitToLast(10)
+  );
+
   onValue(leaderboardQuery, (snapshot) => {
     const scores = [];
     snapshot.forEach((childSnapshot) => {
       const data = childSnapshot.val();
-      const score = {
+      if (!data) return;
+      scores.push({
         username: data.username,
         score: data.score,
-        uid: childSnapshot.key // Store the UID as well
-      };
-      scores.push(score);
+        uid: childSnapshot.key,
+      });
     });
     callback(scores.reverse());
   });
 }
 
-
 function showHighscore(callback) {
   const user = auth.currentUser;
-  if (user) {
-    const uid = user.uid;
-    const userRef = ref(database, 'leaderboard/' + uid);
-
-    onValue(userRef, (snapshot) => {
-      let highscore = 0;
-
-      const data = snapshot.val();
-      if (data) {
-        highscore = data.score;
-      }
-
-      document.getElementById('highscoreValue').textContent = highscore;
-      callback();
-    }, { onlyOnce: true });
-  } else {
+  if (!user) {
     console.error('User is not authenticated');
     callback();
+    return;
   }
+
+  const userRef = ref(database, 'leaderboard/' + user.uid);
+
+  onValue(
+    userRef,
+    (snapshot) => {
+      const data = snapshot.val();
+      const highscore = data?.score ?? 0;
+      document.getElementById('highscoreValue').textContent = highscore;
+      callback();
+    },
+    { onlyOnce: true }
+  );
 }
 
-
-function getPersonalScore(username, callback) {
+async function getPersonalScore(username, callback) {
   const user = auth.currentUser;
-  if (user) {
-    const uid = user.uid;
-    const userRef = ref(database, 'leaderboard/' + uid);
+  if (!user) {
+    callback(0, '—');
+    return;
+  }
 
-    get(userRef).then((snapshot) => {
-      const data = snapshot.val();
-      if (data && data.username === username) {
-        callback(data.score);
-      } else {
-        callback(0);
+  const uid = user.uid;
+  const userRef = ref(database, 'leaderboard/' + uid);
+
+  try {
+    const snapshot = await get(userRef);
+    const data = snapshot.val();
+
+    if (!data || data.username !== username) {
+      callback(0, '—');
+      return;
+    }
+
+    // Rank = 1 + number of players with a strictly higher score
+    const allSnapshot = await get(ref(database, 'leaderboard'));
+    let higherCount = 0;
+    allSnapshot.forEach((child) => {
+      const entry = child.val();
+      if (entry && typeof entry.score === 'number' && entry.score > data.score) {
+        higherCount += 1;
       }
-    }).catch((error) => {
-      console.error('Error fetching personal score:', error);
-      callback(0);
     });
-  } else {
-    callback(0);
+
+    callback(data.score, higherCount + 1);
+  } catch (error) {
+    console.error('Error fetching personal score:', error);
+    callback(0, '—');
   }
 }
 

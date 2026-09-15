@@ -79,6 +79,10 @@ web_modules/
 .env.production.local
 .env.local
 
+# local yarn / temp (disk space workaround)
+.yarn-cache/
+.tmp/
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -90,6 +94,12 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+
+# GitHub Pages build output (deployed via Actions, not committed)
+docs/
+
+# Firebase rules (kept local; publish via Firebase Console)
+database.rules.json
 
 # Gatsby files
 .cache/

@@ -102,11 +102,6 @@ startButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   if (validatePlayerName(playerName)) {
     localStorage.setItem('playerName', playerName);
-    try {
-
-    addScore(playerName, 0);
-  } catch (error) {
-  }
     startGameWithName(playerName);
   }
 });
@@ -193,22 +188,18 @@ function validatePlayerName(username) {
 
 function startGameWithName(playerName) {
   initializeAuth(() => {
-    // Successful authentication callback
     console.log('Authentication successful, initializing game...');
     nameScreen.style.display = 'none';
-    showHighscore(() => {
-      loadingScreen.style.opacity = 0;
-      ignoreInput = false;
-      init();
+    addScore(playerName, 0).finally(() => {
+      showHighscore(() => {
+        loadingScreen.style.opacity = 0;
+        ignoreInput = false;
+        init();
+      });
     });
-  /*showHighscore(playerName, () => {
-    loadingScreen.style.opacity = 0;
-    ignoreInput = false;
-    init();
-  });*/
   }, (error) => {
-    // Failure callback
     console.error('Authentication failed:', error);
+    errorMessage.textContent = 'Could not connect to leaderboard. Try again.';
   });
 }
 
@@ -219,7 +210,7 @@ function startGame() {
   stack = [];
   overhangs = [];
 
-  if (audioStopped) {
+  if (audioStopped && sound) {
     sound.play();
     audioStopped = false;
   }
@@ -365,11 +356,14 @@ function eventHandler() {
 
     sound = new THREE.Audio(listener);
     const audioLoader = new THREE.AudioLoader();
-    audioLoader.load('/sounds/BackgroundMusic.mp3', function (buffer) {
+    // Relative path so GitHub Pages (/tbs-game/) resolves correctly
+    audioLoader.load('sounds/BackgroundMusic.mp3', function (buffer) {
       sound.setBuffer(buffer);
       sound.setLoop(true);
       sound.setVolume(0.05);
       sound.play();
+    }, undefined, (err) => {
+      console.error('Error loading background music:', err);
     });
   }
 
@@ -469,19 +463,19 @@ function missedTheSpot() {
   }
 
   if (gameOverElement && !autopilot) {
-    sound.stop();
-    audioStopped = true;
+    if (sound?.isPlaying) {
+      sound.stop();
+      audioStopped = true;
+    }
     scoreResultElement.innerText = stack.length - 2;
     gameOverElement.style.opacity = 1;
     gameScreen.style.opacity = 0;
     const playerName = localStorage.getItem('playerName');
-    try {
     addScore(playerName, stack.length - 2).then(() => {
       updateLeaderboard();
+    }).catch((error) => {
+      console.error('Failed to save score:', error);
     });
-  } catch (error) {
-    //console.log(error);
-  }
   }
 }
 
@@ -601,20 +595,12 @@ function updateLeaderboard() {
       ownEntry.classList.add('sparkle');
 
       getPersonalScore(playerName, (score, rank) => {
-        // Format the player's score
-        let formattedScore = score.toString().padStart(6, '0');
-
-        // Calculate dots
-        let dots = '.'.repeat(12 - playerName.length + 3);
-
+        const formattedScore = score.toString().padStart(6, '0');
+        const dots = '.'.repeat(12 - playerName.length + 3);
         ownEntry.textContent = `${rank}. ${playerName}${dots}${formattedScore}`;
         leaderboardList.appendChild(ownEntry);
-    });
+      });
     }
   });
 }
-
-
-
-
 
