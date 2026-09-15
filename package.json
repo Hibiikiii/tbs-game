@@ -10,7 +10,7 @@
   "dependencies": {
     "cannon": "^0.6.2",
     "firebase": "^12.19.0",
-    "three": "^0.175.0"
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "parcel": "^2.16.4",
@@ -20,5 +20,12 @@
   "staticFiles": {
     "staticPath": "assets",
     "staticOutDir": "."
+  },
+  "resolutions": {
+    "protobufjs": "^7.6.3",
+    "@protobufjs/utf8": "^1.1.1",
+    "websocket-driver": "^0.7.5",
+    "@grpc/grpc-js": "^1.14.4",
+    "picomatch": "^2.3.2"
   }
 }
