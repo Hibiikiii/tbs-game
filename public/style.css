@@ -3,7 +3,7 @@
 body {
   margin: 0;
   color: white;
-  font-family: 'Press Start 2P', cursive;;
+  font-family: 'Press Start 2P', cursive;
   background-color: black;
   pointer-events: none;
 }
@@ -21,7 +21,7 @@ body {
 }
 
 .loadingImage {
-  background-image: url('/assets/textures/loading.gif');
+  background-image: url('../assets/textures/loading.gif');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -68,7 +68,6 @@ body {
 }
 
 #leaderboard p {
-  margin-top: ;
   animation: pulse 1s ease 0s infinite normal forwards;
 }
 
@@ -76,7 +75,7 @@ body {
   pointer-events: auto;
   width: 48px;
   height: 48px;
-  background-image: url('/assets//textures/leaderboardIcon.png');
+  background-image: url('../assets/textures/leaderboardIcon.png');
   transition: transform 0.1s;
   transform: scale(1);
 }
